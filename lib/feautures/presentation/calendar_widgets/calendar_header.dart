@@ -116,7 +116,6 @@ class CalendarHeader extends StatelessWidget {
     for (int index = 0; index < 12; index++) {
       final month = index + 1;
       final isSelected = month == state.displayedMonth.month;
-      // Current = the real current month in real current year
       final isCurrentMonth = isCurrentYear && month == now.month;
 
       items.add(

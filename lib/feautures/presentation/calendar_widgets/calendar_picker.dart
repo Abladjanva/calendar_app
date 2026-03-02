@@ -15,6 +15,8 @@ class CalendarPicker extends StatelessWidget {
   final DateTime maxDate;
   final DateRange? initialRange;
   final Function(DateRange)? onDateChanged;
+  final List<DateTime>? excludedDates;
+  final TextAlign textAlign;
 
   const CalendarPicker({
     Key? key,
@@ -23,6 +25,8 @@ class CalendarPicker extends StatelessWidget {
     required this.maxDate,
     this.initialRange,
     this.onDateChanged,
+    this.excludedDates,
+    this.textAlign = TextAlign.center,
   }) : super(key: key);
 
   @override
@@ -47,7 +51,7 @@ class CalendarPicker extends StatelessWidget {
             children: [
               const CalendarHeader(),
               const SizedBox(height: 16),
-              const CalendarGrid(),
+              CalendarGrid(excludedDates: excludedDates),
               const SizedBox(height: 24),
               _buildInputFields(context, state),
             ],
@@ -68,71 +72,66 @@ class CalendarPicker extends StatelessWidget {
 
       return DateInputField(
         key: const ValueKey('single'),
-        label: '',
+         hint: '00.00.0000',
         initialValue: value,
         isToday: isToday,
+        minDate: minDate,
+        maxDate: maxDate,
+        excludedDates: excludedDates,
+        textAlign: textAlign,
         onDateChanged: (v) =>
             bloc.add(UpdateDateFromInput(dateString: v, isStartDate: true)),
       );
     }
 
-    final hasStart = state.selectedRange.startDate != null;
-    final hasEnd   = state.selectedRange.endDate != null;
     final normalized = state.selectedRange.normalize();
-
-    if (!hasStart || !hasEnd) {
-      final value = hasStart ? _fmt(state.selectedRange.startDate!) : null;
-      final isToday = _isToday(state.selectedRange.startDate);
-
-      return AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: DateInputField(
-          key: const ValueKey('range_single'),
-          label: '',
-          initialValue: value,
-          isToday: isToday,
-          onDateChanged: (v) =>
-              bloc.add(UpdateDateFromInput(dateString: v, isStartDate: true)),
-        ),
-      );
-    }
-
     final isStartToday = _isToday(normalized.startDate);
-    final isEndToday   = _isToday(normalized.endDate);
+    final isEndToday = _isToday(normalized.endDate);
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: Row(
-        key: const ValueKey('range_two'),
-        children: [
-          Expanded(
-            child: DateInputField(
-              key: const ValueKey('from'),
-              label: '',
-              initialValue: _fmt(normalized.startDate!),
-              isToday: isStartToday,
-              onDateChanged: (v) =>
-                  bloc.add(UpdateDateFromInput(dateString: v, isStartDate: true)),
-            ),
+    return Row(
+      key: const ValueKey('range_two_always'),
+      children: [
+        Expanded(
+          child: DateInputField(
+            key: const ValueKey('from'),
+            hint: '00.00.0000',
+            initialValue: normalized.startDate != null
+                ? _fmt(normalized.startDate!)
+                : null,
+            isToday: isStartToday,
+            minDate: minDate,
+            maxDate: maxDate,
+            excludedDates: excludedDates,
+            textAlign: textAlign, 
+            onDateChanged: (v) =>
+                bloc.add(UpdateDateFromInput(dateString: v, isStartDate: true)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: DateInputField(
-              key: const ValueKey('to'),
-              label: '',
-              initialValue: _fmt(normalized.endDate!),
-              isToday: isEndToday,
-              onDateChanged: (v) =>
-                  bloc.add(UpdateDateFromInput(dateString: v, isStartDate: false)),
-            ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: DateInputField(
+            key: const ValueKey('to'),
+            hint: '00.00.0000',
+            initialValue: normalized.endDate != null
+                ? _fmt(normalized.endDate!)
+                : null,
+            isToday: isEndToday,
+            minDate: minDate,
+            maxDate: maxDate,
+            excludedDates: excludedDates,
+            isEndField: true,
+            startDate: normalized.startDate,
+            textAlign: textAlign, 
+            onDateChanged: (v) =>
+                bloc.add(UpdateDateFromInput(dateString: v, isStartDate: false)),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   bool _isToday(DateTime? date) {
-    if (date == null) return true; 
+    if (date == null) return true;
     final now = DateTime.now();
     return date.year == now.year &&
         date.month == now.month &&
